@@ -1,0 +1,11 @@
+* text=auto
+*.adoc text
+*.bazel text
+*.bzl text
+*.java text
+BUILD text -linguist-detectable
+WORKSPACE text -linguist-detectable
+*.bat text eol=crlf
+*.bin filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jar filter=lfs diff=lfs merge=lfs -text

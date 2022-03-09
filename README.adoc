@@ -1,0 +1,113 @@
+= Async-Profiler Example
+:Author:    Oliver Eikemeier
+:Email:     <eikemeier@fillmore-labs.com>
+:Date:      2022-03
+:Revision:  v0.1
+:toc: macro
+
+toc::[]
+
+== Purpose
+
+This source demonstrates broken parameter parsing when
+https://github.com/jvm-profiling-tools/async-profiler[async-profiler] is used with
+https://github.com/openjdk/jmh[JMH].
+
+== Running
+
+=== Prerequisites
+
+You need https://github.com/bazelbuild/bazelisk[Bazelisk] installed, see also
+https://docs.bazel.build/versions/main/install-bazelisk.html[Installing Bazel using Bazelisk].
+
+==== macOS
+
+Using https://brew.sh[HomeBrew] enter
+
+[source,shell]
+brew install bazelisk
+
+=== Demonstration
+
+To run an example using JBM 1.34 and async-profiler 2.7, use
+
+[source,shell]
+bazel run //:benchmark -- -prof "async:output=flamegraph"
+
+resulting in
+
+[listing]
+----
+# JMH version: 1.34
+# VM version: JDK 17, OpenJDK 64-Bit Server VM, 17+35-LTS
+# VM invoker: [...]/external/remotejdk17_macos/zulu-17.jdk/Contents/Home/bin/java
+# VM options: -Djava.library.path=external/async_profiler_macos/build
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: <none>
+# Measurement: 1 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: com.example.benchmark.Bench.empty
+
+# Run progress: 0,00% complete, ETA 00:00:01
+# Fork: 1 of 1
+# Preparing profilers: AsyncProfiler
+Iteration   1: <failure>
+
+java.lang.IllegalArgumentException: Unknown argument
+	at org.openjdk.jmh.profile.AsyncProfiler$JavaApi.execute0(Native Method)
+	at org.openjdk.jmh.profile.AsyncProfiler$JavaApi.execute(AsyncProfiler.java:588)
+	at org.openjdk.jmh.profile.AsyncProfiler.execute(AsyncProfiler.java:430)
+	at org.openjdk.jmh.profile.AsyncProfiler.start(AsyncProfiler.java:337)
+	at org.openjdk.jmh.profile.AsyncProfiler.beforeIteration(AsyncProfiler.java:327)
+	at org.openjdk.jmh.runner.BenchmarkHandler.startProfilers(BenchmarkHandler.java:249)
+	at org.openjdk.jmh.runner.BenchmarkHandler.runIteration(BenchmarkHandler.java:325)
+	at org.openjdk.jmh.runner.BaseRunner.runBenchmark(BaseRunner.java:281)
+	at org.openjdk.jmh.runner.BaseRunner.runBenchmark(BaseRunner.java:233)
+	at org.openjdk.jmh.runner.BaseRunner.doSingle(BaseRunner.java:138)
+	at org.openjdk.jmh.runner.BaseRunner.runBenchmarksForked(BaseRunner.java:75)
+	at org.openjdk.jmh.runner.ForkedRunner.run(ForkedRunner.java:72)
+	at org.openjdk.jmh.runner.ForkedMain.main(ForkedMain.java:86)
+----
+
+=== Analysis
+
+This is a regression, using async-profiler 2.6 we could run
+
+[source,shell]
+bazel run //:benchmark26 -- -prof "async:output=flamegraph"
+
+resulting in
+
+[listing]
+----
+# JMH version: 1.34
+# VM version: JDK 17, OpenJDK 64-Bit Server VM, 17+35-LTS
+# VM invoker: [...]/external/remotejdk17_macos/zulu-17.jdk/Contents/Home/bin/java
+# VM options: -Djava.library.path=external/async_profiler26_macos/build
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: <none>
+# Measurement: 1 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: com.example.benchmark.Bench.empty
+
+# Run progress: 0,00% complete, ETA 00:00:01
+# Fork: 1 of 1
+# Preparing profilers: AsyncProfiler
+Iteration   1: 2590878666,077 ops/s
+·async: (text only)
+
+# Processing profiler results: AsyncProfiler
+
+
+Result "com.example.benchmark.Bench.empty":
+2590878666,077 ops/s
+
+Secondary result "com.example.benchmark.Bench.empty:·async":
+Async profiler results:
+[...]/bazel-out/darwin-fastbuild/bin/src/main/java/com/example/benchmark/benchmark26.runfiles/example_async_profiler/com.example.benchmark.Bench.empty-Throughput/flame-cpu-forward.html
+[...]/bazel-out/darwin-fastbuild/bin/src/main/java/com/example/benchmark/benchmark26.runfiles/example_async_profiler/com.example.benchmark.Bench.empty-Throughput/flame-cpu-reverse.html
+----
